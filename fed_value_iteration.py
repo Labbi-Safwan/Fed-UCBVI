@@ -12,6 +12,20 @@ def create_folder_if_not_exists(folder_path):
         os.makedirs(folder_path)
 
 
+# Parent directory
+parent_directory = './tests'
+
+# Create directories if they do not exist
+create_folder_if_not_exists(parent_directory)
+
+
+# Learning curve file
+log_Q_hat = os.path.join(parent_directory, 'Q_hat.txt')
+log_transitions = os.path.join(parent_directory, 'transitions.txt')
+
+# Parameters file
+#parameters_file = os.path.join(parent_directory, 'parameters.json')
+
 
 class FedValueIteration:
     def __init__(self, envs,  common_kernel, common_reward, ep = 0.0, er = 0.0, **kwargs):
@@ -32,7 +46,9 @@ class FedValueIteration:
         self.N = len(envs)
         self.M = len(envs)
         self.delta = kwargs.get('confidence')
-
+        # set number of local steps
+        #self.L = kwargs.get('L')
+        
         self.verbose = kwargs.get('verbose')
 
         # set number of threads

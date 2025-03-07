@@ -27,6 +27,7 @@ class ValueIteration:
         # get the confidence
         self.confidence = kwargs.get("confidence")
         
+        # maybe this double notation is a bit confusing
         self.M = M
         self.epsilon_p = ep
         self.epsilon_r = er
@@ -272,11 +273,12 @@ class ValueIteration:
         return cumulative_reward, regret, self.sync
 
     def update_transitions(self):
+        #K = {key: value for key, value in self.visit_tracker_pair.items() if value > 0}
         self.transitions =  np.divide(
                                 self.visit_trackers_triplet, 
-                                self.visit_trackers_pair[:, :, np.newaxis, :],  
-                                out=np.full_like(self.visit_trackers_triplet, 1 / self.num_states), 
-                                where=self.visit_trackers_pair[:, :, np.newaxis, :] != 0  
+                                self.visit_trackers_pair[:, :, np.newaxis, :],  # Add new axis to broadcast the division
+                                out=np.full_like(self.visit_trackers_triplet, 1 / self.num_states),  # Output to store the result, initialized to zero
+                                where=self.visit_trackers_pair[:, :, np.newaxis, :] != 0  # Only divide where visit_pair is non-zero
                             )
         return
 

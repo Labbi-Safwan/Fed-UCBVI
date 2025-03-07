@@ -2,6 +2,7 @@ import numpy as np
 from  synthetic_env.Env import FiniteStateFiniteActionMDP
 import pickle
 from FedQ import FedQlearning_gen
+from fed_adv import FedQlearning_gen_adv
 import matplotlib.pyplot as plt
 import os
 import argparse
@@ -57,8 +58,30 @@ def run_fedqlearning(argument):
     diction = argument[6]
     fed_q = FedQlearning_gen(envs, c, diction['T'], n, is_bern= True, is_fed=True,
                                 cb = 2.0, using_bern_min = 1000, using_bern_samp = 1000,
-                                common_kernel = common_P, common_reward = common_r, environment=diction['environment'])
+                                common_kernel = common_P, common_reward = common_r, environment=diction['environment'], H = diction['H'])
     _, _, _, _, average_rewards, regrets_federation, communications , aggregations_times = fed_q.learn()
+    save_results_to_pickle(rewards_file, average_rewards)
+    save_results_to_pickle(regrets_file, regrets_federation)
+    save_results_to_pickle(communications_file, communications)
+    save_results_to_pickle(aggregations_file, aggregations_times)
+    return 
+
+def run_fedqlearning_reference_advanatage(argument):
+    full_path = argument[0]
+    run = argument[1]
+    np.random.seed(run)
+    rewards_file =  full_path + ',run_' +str(run) + ',rewards.pkl'
+    regrets_file = full_path + ',run_'+ str(run)+ ',regrets.pkl'
+    communications_file = full_path + ',run_'+ str(run)+ ',communications.pkl'
+    aggregations_file = full_path +',run_'+ str(run) + ',aggregations.pkl'
+    envs = argument[2]
+    common_P = argument[3]
+    common_r = argument[4]
+    n = argument[5]
+    diction = argument[6]
+    fed_q_advantage = FedQlearning_gen_adv(envs, diction['T'], n, common_kernel = common_P, common_reward = common_r,
+                                                       environment=diction['environment'],  H = diction['H'])
+    _, _, _, _, average_rewards, regrets_federation, communications , aggregations_times = fed_q_advantage.learn()
     save_results_to_pickle(rewards_file, average_rewards)
     save_results_to_pickle(regrets_file, regrets_federation)
     save_results_to_pickle(communications_file, communications)
@@ -68,10 +91,11 @@ def run_fedqlearning(argument):
 
 
 if __name__ == '__main__':
-    epsilons_p =  [0.1]
+    epsilons_p =  [0.0] + list(map(float, np.logspace(-3, -0.5, 6)))  
+    #epsilons_p =  [0.0] + list(map(float, np.logspace(-3, -0.5, 7)))  
     epsilons_r = [0.]
     parser = argparse.ArgumentParser(description='launching the experiment')
-    parser.add_argument("--alg", type=int, default=0, help="0 is for Fed-UCBVI and 1 is for Fed-Q learning")
+    parser.add_argument("--alg", type=int, default=0, help="0 is for Fed-UCBVI, 1 is for Fed-Q learning and 2 for FedQ-Advantage")
     parser.add_argument("--environment", type=int, default=0, help="0 is for the synthetic environment and 1 is for Gridword")
     parser.add_argument("--runs", type=int, default=5, help="number of runs")
     parser.add_argument("--T", type=int, default=int(20), help="max number of episodes to collect")
@@ -89,7 +113,11 @@ if __name__ == '__main__':
     else:
         N = args.N
     runs = args.runs
-    if args.alg ==1:
+    if args.alg ==2:
+        algorithm = "Fed-Q_Advantage"
+        aggregation_t = ""
+        synchronisation_c = ""
+    elif args.alg ==1:
         algorithm = "Fed-Q_learning"
         aggregation_t = ""
         synchronisation_c = ""
@@ -139,13 +167,16 @@ if __name__ == '__main__':
                         elif args.alg ==1:
                             arguments = [[full_path,seed,envs, common_P,common_r,n,args_dict] for seed in seeds]
                             results = list(executor.map(run_fedqlearning, arguments))
+                        elif args.alg ==2:
+                            arguments = [[full_path,seed,envs, common_P,common_r,n,args_dict] for seed in seeds]
+                            results = list(executor.map(run_fedqlearning_reference_advanatage, arguments))
                         else:
-                            print("The algorithm shoud be either 0 or 1: 0 is for Fed-UCBVI and 1 is for Fed-Q learning") 
+                            print("The algorithm shoud be either 0, 1 or 2: 0 is for Fed-UCBVI, 1 is for Fed-Q learning and 2 for Federated Reference advantage decomposition") 
                 elif args.environment ==1:
                     env = GridWorld(3, 3, walls=((1, 1),(1,1)), success_probability=0.8)
                     common_P = env.get_P() # get the common transition kernel
                     common_r = env.get_r() # get the common reward function
-                    envs = [GridWorld(3, 3, walls=((1, 1),(1,1)), success_probability=0.8, common=common_P, epsilon_p=ep) for _ in range(n)]
+                    envs = [GridWorld(3, 3, walls=((1, 1),(1,1)), success_probability=1.0, common=common_P, epsilon_p=ep) for _ in range(n)]
                     with concurrent.futures.ProcessPoolExecutor(max_workers=runs) as executor:
                         if args.alg ==0:
                             arguments = [[full_path,seed,envs, common_P,common_r,n,er,ep,args_dict] for seed in seeds]
@@ -153,7 +184,10 @@ if __name__ == '__main__':
                         elif args.alg ==1:
                             arguments = [[full_path,seed,envs, common_P,common_r,n,args_dict] for seed in seeds]
                             results = list(executor.map(run_fedqlearning, arguments)) 
+                        elif args.alg ==2:
+                            arguments = [[full_path,seed,envs, common_P,common_r,n,args_dict] for seed in seeds]
+                            results = list(executor.map(run_fedqlearning_reference_advanatage, arguments))
                         else:
-                            print("The environnement shoud be either 0 or 1: 0 is for Fed-UCBVI and 1 is for Fed-Q learning")
+                            print("The algorithm shoud be either 0, 1 or 2: 0 is for Fed-UCBVI, 1 is for Fed-Q learning and 2 for Federated Reference advantage decomposition") 
                 else:
                     print("The environnement shoud be either 0 or 1: 0 is for the synthetic environment and 1 is for Gridword")

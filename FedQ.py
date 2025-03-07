@@ -15,7 +15,6 @@ class FedQlearning_gen:
         self.environnement = environment
         self.common_kernel = common_kernel
         self.common_reward = common_reward
-        self.H = self.common_kernel.shape[0]
 
         # this comes from the modified rlberry code
         self.transitions = [env.get_P() for env in self.envs]
@@ -30,9 +29,12 @@ class FedQlearning_gen:
         if self.environnement == 0:
             self.states = list(range(self.envs[0].observation_dim()))
             self.actions = list(range(self.envs[0].action_dim()))
+            self.H = self.common_kernel.shape[0]
         elif self.environnement == 1:
             self.states = list(range(self.envs[0].observation_space.n))
             self.actions = list(range(self.envs[0].action_space.n))
+            self.H = H
+
         
         self.S = len(self.states)
         self.A = len(self.actions)

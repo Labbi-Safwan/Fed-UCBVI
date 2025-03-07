@@ -7,12 +7,13 @@ from matplotlib import cm
 from rlberry.envs.finite_mdp import FiniteMDP
 from . import gridworld_utils
 
+
 import rlberry
 
 logger = rlberry.logger
 
 
-class GridWorld( FiniteMDP):
+class GridWorld(FiniteMDP):
     """
     Simple GridWorld environment.
 
@@ -351,6 +352,7 @@ class GridWorld( FiniteMDP):
                     "to (%d, %d) with prob %f"
                     % (self.index2coord[next_s_idx] + (prob,))
                 )
+
 
     def step(self, action):
         assert self.action_space.contains(action), "Invalid action!"
